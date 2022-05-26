@@ -16,14 +16,12 @@ const (
 )
 
 func insertToTable(db *sql.DB) error {
-
 	insert, err := db.Query("INSERT INTO `RFID`.`Covert_RFID_JANCODE` (`drgm_rfid_cd`, `drgm_jan`, `drgm_jan2`) VALUES ('Test', 'Test', 'Test');")
 	if err != nil {
 		panic(err.Error())
 	}
 	defer insert.Close()
 	f.Println("Successful Insert to Database!")
-
 	return nil
 }
 
@@ -44,7 +42,7 @@ func dbConnection() (*sql.DB, error) {
 		f.Println("error verifying connection with db.Ping")
 		panic(err.Error())
 	}
-	log.Printf("Connected to database %s successfully\n", dbname)
+	log.Printf("Verified connection from %s database \n", dbname)
 	return db, nil
 }
 
@@ -57,10 +55,14 @@ func main() {
 	}
 	defer db.Close()
 	log.Printf("Successfully connected to database")
+
+	// Structure to QUERY with MySQL database//
+	//========================================//
 	// err = insertToTable(db)
 	// if err != nil {
 	// 	log.Printf("Insert failed failed with error %s", err)
 	// 	return
 	// }
+	//========================================//
 
 }
