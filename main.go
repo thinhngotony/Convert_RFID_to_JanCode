@@ -1,11 +1,9 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	f "fmt"
 	"log"
-	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -41,37 +39,10 @@ func dbConnection() (*sql.DB, error) {
 	}
 	//defer db.Close()
 
-	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancelfunc()
-	res, err := db.ExecContext(ctx, "CREATE DATABASE IF NOT EXISTS "+dbname)
+	err = db.Ping()
 	if err != nil {
-		log.Printf("Error %s when creating DB\n", err)
-		return nil, err
-	}
-	no, err := res.RowsAffected()
-	if err != nil {
-		log.Printf("Error %s when fetching rows", err)
-		return nil, err
-	}
-	log.Printf("rows affected %d\n", no)
-
-	db.Close()
-	db, err = sql.Open("mysql", dsn(dbname))
-	if err != nil {
-		log.Printf("Error %s when opening DB", err)
-		return nil, err
-	}
-
-	db.SetMaxOpenConns(20)
-	db.SetMaxIdleConns(20)
-	db.SetConnMaxLifetime(time.Minute * 5)
-
-	ctx, cancelfunc = context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancelfunc()
-	err = db.PingContext(ctx)
-	if err != nil {
-		log.Printf("Errors %s pinging DB", err)
-		return nil, err
+		f.Println("error verifying connection with db.Ping")
+		panic(err.Error())
 	}
 	log.Printf("Connected to database %s successfully\n", dbname)
 	return db, nil
