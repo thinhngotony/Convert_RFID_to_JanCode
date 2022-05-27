@@ -84,23 +84,23 @@ func insertToTable(db *sql.DB) error {
 	return nil
 }
 
-func convertFromRFID(db *sql.DB, rfid_code string) (string, error) {
+func convertFromRFID(db *sql.DB, rfid_code string) (string, string, error) {
 	log.Printf("Getting JAN code")
-	query := `select drgm_jan from Covert_RFID_JANCODE where drgm_rfid_cd = ?;`
+	query := `select drgm_jan, drgm_jan2 from Covert_RFID_JANCODE where drgm_rfid_cd = ?;`
 	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelfunc()
 	stmt, err := db.PrepareContext(ctx, query)
 	if err != nil {
 		log.Printf("Error %s when preparing SQL statement", err)
-		return "", err
+		return "", "", err
 	}
 	defer stmt.Close()
-	var JAN_code string
+	var JAN_code, JAN_code_2 string
 	row := stmt.QueryRowContext(ctx, rfid_code)
-	if err := row.Scan(&JAN_code); err != nil {
-		return "", err
+	if err := row.Scan(&JAN_code, &JAN_code_2); err != nil {
+		return "", "", err
 	}
-	return JAN_code, nil
+	return JAN_code, JAN_code_2, nil
 
 }
 
@@ -130,14 +130,14 @@ func main() {
 	//========================================//
 
 	rfid_code := "0xRFID"
-	jan_code, err := convertFromRFID(db, rfid_code)
+	jan_code, jan_code_2, err := convertFromRFID(db, rfid_code)
 	switch {
 	case err == sql.ErrNoRows:
 		log.Printf("Product %s not found in DB", rfid_code)
 	case err != nil:
 		log.Printf("Encountered err %s when fetching price from DB", err)
 	default:
-		log.Printf("JanCode of %s is %s", rfid_code, jan_code)
+		log.Printf("JanCode 1 of %s is %s, JanCode 2 is %s", rfid_code, jan_code, jan_code_2)
 	}
 
 	// for _, y := range x {
