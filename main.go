@@ -54,23 +54,23 @@ func dbConnection() (*sql.DB, error) {
 	db.Close()
 	db, err = sql.Open("mysql", dsn(dbname))
 	if err != nil {
-		log.Printf("Error %s when opening DB", err)
+		log.Printf("Error %s when opening database", err)
 		return nil, err
 	}
 	//defer db.Close()
 
-	db.SetMaxOpenConns(20)
-	db.SetMaxIdleConns(20)
-	db.SetConnMaxLifetime(time.Minute * 5)
+	// db.SetMaxOpenConns(20)
+	// db.SetMaxIdleConns(20)
+	// db.SetConnMaxLifetime(time.Minute * 5)
 
 	ctx, cancelfunc = context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelfunc()
 	err = db.PingContext(ctx)
 	if err != nil {
-		log.Printf("Errors %s pinging DB", err)
+		log.Printf("Errors %s pinging database", err)
 		return nil, err
 	}
-	log.Printf("Connected to DB %s successfully\n", dbname)
+	log.Printf("Verified connection from %s database with Ping\n", dbname)
 	return db, nil
 }
 
