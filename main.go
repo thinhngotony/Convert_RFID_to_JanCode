@@ -27,14 +27,50 @@ func dbConnection() (*sql.DB, error) {
 		log.Printf("Error %s when opening DB\n", err)
 		return nil, err
 	}
+	// defer db.Close()
+
+	// err = db.Ping()
+	// if err != nil {
+	// 	f.Println("error verifying connection with db.Ping")
+	// 	panic(err.Error())
+	// }
+	// log.Printf("Verified connection from %s database \n", dbname)
+	// return db, nil
+
+	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelfunc()
+	res, err := db.ExecContext(ctx, "CREATE DATABASE IF NOT EXISTS "+dbname)
+	if err != nil {
+		log.Printf("Error %s when creating DB\n", err)
+		return nil, err
+	}
+	no, err := res.RowsAffected()
+	if err != nil {
+		log.Printf("Error %s when fetching rows", err)
+		return nil, err
+	}
+	log.Printf("rows affected %d\n", no)
+
+	db.Close()
+	db, err = sql.Open("mysql", dsn(dbname))
+	if err != nil {
+		log.Printf("Error %s when opening DB", err)
+		return nil, err
+	}
 	//defer db.Close()
 
-	err = db.Ping()
+	db.SetMaxOpenConns(20)
+	db.SetMaxIdleConns(20)
+	db.SetConnMaxLifetime(time.Minute * 5)
+
+	ctx, cancelfunc = context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelfunc()
+	err = db.PingContext(ctx)
 	if err != nil {
-		f.Println("error verifying connection with db.Ping")
-		panic(err.Error())
+		log.Printf("Errors %s pinging DB", err)
+		return nil, err
 	}
-	log.Printf("Verified connection from %s database \n", dbname)
+	log.Printf("Connected to DB %s successfully\n", dbname)
 	return db, nil
 }
 
@@ -50,7 +86,7 @@ func insertToTable(db *sql.DB) error {
 
 func convertFromRFID(db *sql.DB, rfid_code string) (string, error) {
 	log.Printf("Getting JAN code")
-	query := `select drgm_jan from Covert_RFID_JANCODE where drgm_rfid_cd = ?`
+	query := `select drgm_jan from Covert_RFID_JANCODE where drgm_rfid_cd = ?;`
 	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelfunc()
 	stmt, err := db.PrepareContext(ctx, query)
@@ -65,7 +101,14 @@ func convertFromRFID(db *sql.DB, rfid_code string) (string, error) {
 		return "", err
 	}
 	return JAN_code, nil
+
 }
+
+// type book struct {
+// 	rfid_code  string
+// 	jan_code   string
+// 	jan_code_2 string
+// }
 
 func main() {
 
@@ -94,11 +137,26 @@ func main() {
 	case err != nil:
 		log.Printf("Encountered err %s when fetching price from DB", err)
 	default:
-		log.Printf("Price of %s is %s", rfid_code, jan_code)
+		log.Printf("JanCode of %s is %s", rfid_code, jan_code)
 	}
 
 	// for _, y := range x {
 	// 	log.Printf("Name: %s Price: %d", x.name, x.price)
 	// }
+
+	// jancodes, err := selectJanCodeByRFID(db, rfid_code)
+	// if err != nil {
+	// 	log.Printf("Error %s when selecting product by price", err)
+	// 	return
+	// }
+	// for _, book := range jancodes {
+	// 	log.Printf("Name: %s Price: %s", book.rfid_code, book.jan_code)
+	// }
+
+	// err = db.QueryRow("select drgm_jan from Covert_RFID_JANCODE where drgm_rfid_cd = ?", 1).Scan(&rfid_code)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// f.Println(rfid_code)
 
 }
